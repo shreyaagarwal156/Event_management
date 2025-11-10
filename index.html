@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEU Events</title>
+    <!-- Tailwind CSS CDN --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons --><script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            overflow-x: hidden;
+        }
+        /* Page transitions */
+        .page-content {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Sidebar ki state ke liye classes */
+        /* COLLAPSED STATE (Jab sidebar band hai) */
+        .sidebar-collapsed #sidebar {
+            width: 5rem; /* w-20 */
+        }
+        .sidebar-collapsed #main-content-wrapper {
+            margin-left: 5rem; /* ml-20 */
+            width: calc(100% - 5rem);
+        }
+        .sidebar-collapsed .sidebar-text,
+        .sidebar-collapsed .sidebar-logo-text {
+            display: none;
+        }
+        .sidebar-collapsed .nav-link {
+            justify-content: center;
+        }
+        .sidebar-collapsed #user-profile-link .ml-3 {
+            display: none; /* Hide profile text */
+        }
+
+        /* EXPANDED STATE (Jab sidebar khula hai) */
+        #sidebar {
+            width: 16rem; /* w-64 */
+            transition: width 0.3s ease-in-out;
+        }
+        #main-content-wrapper {
+            margin-left: 16rem; /* ml-64 */
+            width: calc(100% - 16rem);
+            transition: margin-left 0.3s ease-in-out;
+        }
+        
+        /* Active sidebar link */
+        .nav-link.active {
+            background-color: #4f46e5; /* Indigo-600 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .nav-link {
+            transition: all 0.2s ease;
+        }
+        
+        /* Custom scrollbar */
+        #main-content::-webkit-scrollbar { width: 8px; }
+        #main-content::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        #main-content::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Home page hero image par scroll effects ke liye */
+        #home-hero-image {
+            transition: filter 0.1s ease-out, transform 0.1s ease-out;
+        }
+        
+        /* Role-based link hiding */
+        .admin-only-link, .student-only-link {
+            display: none; /* Default se hidden */
+        }
+
+        /* Hero section specific styles for new layout */
+        #home-hero-section {
+            position: relative;
+            height: 450px;
+            overflow: hidden;
+        }
+
+        #home-hero-bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.7); /* Slightly dull the image */
+        }
+
+        #home-hero-content {
+            position: absolute;
+            inset: 0; /* top, right, bottom, left 0 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10; /* Ensure content is above the image */
+            text-align: center;
+            color: white;
+        }
+        
+        #geu-title {
+            font-size: 4rem; /* Text size */
+            font-weight: 800; /* Extra bold */
+            opacity: 0.6; /* Dull mode */
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* For better visibility */
+        }
+
+        #welcome-message-container {
+            background-color: rgba(79, 70, 229, 0.7); /* Indigo-600 with transparency */
+            padding: 1rem 2rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            font-size: 2.25rem; /* text-4xl */
+            font-weight: 700; /* font-bold */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
+            margin-top: 1rem; /* Space between title and message */
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 antialiased">
+
+    <!-- Custom Alert Box (alert() ki jagah) --><div id="custom-alert-box" class="hidden fixed top-5 right-5 z-[100] p-4 rounded-lg shadow-xl text-white">
+        <span id="custom-alert-message"></span>
+        <button onclick="document.getElementById('custom-alert-box').classList.add('hidden')" class="ml-4 font-bold">&times;</button>
+    </div>
+
+    <!-- ===== 1. AUTHENTICATION CONTAINER ===== --><div id="auth-container">
+        <!--  --><div class="min-h-screen flex items-center justify-center bg-gray-900" style="background-image: url('https://placehold.co/1920x1080/000000/ffffff?text=GEU+Campus+Night&font=raleway'); background-size: cover; background-position: center;">
+            <div class="absolute inset-0 bg-black opacity-60"></div>
+            
+            <div class="relative z-10 w-full max-w-md p-8 space-y-6 bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl shadow-2xl border border-gray-700">
+                
+                <!-- Login Form --><form id="login-form" class="space-y-6">
+                    <h2 class="text-3xl font-bold text-center text-white">GEU Events Login</h2>
+                    <div>
+                        <label for="login-email" class="block text-sm font-medium text-gray-300">Email</label>
+                        <!-- UPDATED: Removed pre-filled value --><input id="login-email" type="email" required class="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="user@geu.ac.in">
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-sm font-medium text-gray-300">Password</label>
+                        <!-- UPDATED: Removed pre-filled value --><input id="login-password" type="password" required class="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Password">
+                    </div>
+                    <button type="submit" class="w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                        Login
+                    </button>
+                    <p class="text-sm text-center text-gray-400">
+                        Don't have an account? 
+                        <a href="#" id="show-register-form" class="font-medium text-indigo-400 hover:text-indigo-300">Register here</a>
+                    </p>
+                </form>
+
+                <!-- Register Form (Initially hidden) --><form id="register-form" class="hidden space-y-6">
+                    <h2 class="text-3xl font-bold text-center text-white">Create Student Account</h2>
+                    <div>
+                        <label for="register-name" class="block text-sm font-medium text-gray-300">Full Name</label>
+                        <input id="register-name" type="text" required class="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white" placeholder="Aarav Gupta">
+                    </div>
+                    <div>
+                        <label for="register-email" class="block text-sm font-medium text-gray-300">Email</label>
+                        <input id="register-email" type="email" required class="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white" placeholder="student@geu.ac.in">
+                    </div>
+                    <div>
+                        <label for="register-password" class="block text-sm font-medium text-gray-300">Password</label>
+                        <input id="register-password" type="password" required class="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white" placeholder="Password">
+                    </div>
+                    <!-- UPDATED: Removed Role Selection. All registrations are 'student' --><button type="submit" class="w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                        Register
+                    </button>
+                    <p class="text-sm text-center text-gray-400">
+                        Already have an account? 
+                        <a href="#" id="show-login-form" class="font-medium text-indigo-400 hover:text-indigo-300">Login here</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 2. MAIN APPLICATION CONTAINER ===== --><div id="app-container" class="hidden">
+        
+        <!-- Collapsible Sidebar --><nav id="sidebar" class="w-64 bg-gray-900 text-white flex flex-col fixed top-0 left-0 h-full z-20">
+            <!-- Sidebar Toggle Button (Logo) --><div id="sidebar-toggle-button" class="flex items-center p-4 h-16 border-b border-gray-700 cursor-pointer hover:bg-gray-800">
+                <i class="ph-fill ph-calendar-check text-3xl text-indigo-400"></i>
+                <span class="sidebar-logo-text ml-3 text-xl font-bold">GEU Events</span>
+            </div>
+            
+            <!-- Navigation Links --><div class="flex-1 p-4 space-y-2">
+                <a href="#" class="nav-link active flex items-center px-4 py-2.5 rounded-lg hover:bg-gray-700" data-page="home">
+                    <i class="ph ph-house text-xl"></i>
+                    <span class="sidebar-text ml-3">Home</span>
+                </a>
+                
+                <!-- Student-Only Links --><a href="#" class="nav-link student-only-link flex items-center px-4 py-2.5 rounded-lg hover:bg-gray-700" data-page="events">
+                    <i class="ph ph-list-bullets text-xl"></i>
+                    <span class="sidebar-text ml-3">All Events</span>
+                </a>
+                <a href="#" class="nav-link student-only-link flex items-center px-4 py-2.5 rounded-lg hover:bg-gray-700" data-page="registrations">
+                    <i class="ph ph-ticket text-xl"></i>
+                    <span class="sidebar-text ml-3">My Registrations</span>
+                </a>
+                <a href="#" class="nav-link student-only-link flex items-center px-4 py-2.5 rounded-lg hover:bg-gray-700" data-page="feedback">
+                    <i class="ph ph-chat-text text-xl"></i>
+                    <span class="sidebar-text ml-3">Submit Feedback</span>
+                </a>
+                
+                <!-- Admin-Only Links --><div class="admin-only-link border-t border-gray-700 my-4"></div>
+                <div class="admin-only-link p-2 text-xs font-semibold text-gray-400 uppercase">
+                    <span class="sidebar-text">Admin Menu</span>
+                </div>
+                <a href="#" class="nav-link admin-only-link flex items-center px-4 py-2.5 rounded-lg hover:bg-gray-700" data-page="manage-events">
+                    <i class="ph ph-wrench text-xl"></i>
+                    <span class="sidebar-text ml-3">Manage Events</span>
+                </a>
+                <a href="#" class="nav-link admin-only-link flex items-center px-4 py-2.5 rounded-lg hover:bg-gray-700" data-page="analytics">
+                    <i class="ph ph-chart-line text-xl"></i>
+                    <span class="sidebar-text ml-3">Feedback Analytics</span>
+                </a>
+            </div>
+            
+            <!-- User Profile / Logout --><div class="p-4 border-t border-gray-700">
+                <!-- NEW: Profile link --><a href="#" id="user-profile-link" class="nav-link flex items-center p-2 rounded-lg hover:bg-gray-700" data-page="profile">
+                    <img id="user-avatar" src="https://placehold.co/40x40/60a5fa/ffffff?text=U" alt="User Avatar" class="rounded-full flex-shrink-0">
+                    <div class="sidebar-text ml-3">
+                        <p id="user-name-sidebar" class="text-sm font-medium">Loading...</p>
+                        <p id="user-role-sidebar" class="text-xs text-gray-400">Loading...</p>
+                    </div>
+                </a>
+                <button id="logout-button" class="w-full mt-4 flex items-center justify-center px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700">
+                    <i class="ph ph-sign-out text-xl"></i>
+                    <span class="sidebar-text ml-3">Logout</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content Area --><div id="main-content-wrapper" class="ml-64">
+            <div id="main-content" class="h-screen overflow-y-auto">
+                
+                <!-- Page 1: Home (Welcome Page) --><div id="page-home" class="page-content">
+                    <div id="home-hero-section">
+                        <img id="home-hero-bg-image" src="/static/img.jpeg" alt="Graphic Era University Campus">
+                        <div id="home-hero-content">
+                            <h1 id="geu-title">Graphic Era University</h1>
+                            <div id="welcome-message-container">
+                                <span id="welcome-message" class="text-white">Welcome!</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-8">
+                        <h2 class="text-3xl font-bold text-gray-800">Recommended For You (AI)</h2>
+                        <p class="mt-2 text-gray-600">Suggestions based on your past event registrations.</p>
+                        <!-- NEW: AI Recommendations will load here --><div id="ai-recommendations-container" class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- JS will fill this --></div>
+                    </div>
+                </div>
+
+                <!-- Page 2: All Events (Student) --><div id="page-events" class="page-content hidden p-8">
+                    <h1 class="text-3xl font-bold text-gray-800">Upcoming Events</h1>
+                    <div id="events-list-container" class="mt-8 space-y-6">
+                        <!-- Events yahan JavaScript se load honge --></div>
+                </div>
+
+                <!-- Page 3: My Registrations (Student) --><div id="page-registrations" class="page-content hidden p-8">
+                    <h1 class="text-3xl font-bold text-gray-800">My Registrations</h1>
+                    <div id="my-registrations-container" class="mt-8 space-y-6">
+                        <!-- Registered events yahan JavaScript se load honge --></div>
+                </div>
+
+                <!-- Page 4: Submit Feedback (Student) --><div id="page-feedback" class="page-content hidden p-8">
+                    <h1 class="text-3xl font-bold text-gray-800">Submit Feedback</h1>
+                    <form id="feedback-form" class="mt-8 bg-white p-6 rounded-lg shadow-md max-w-lg">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="feedback-event" class="block text-sm font-medium text-gray-700">Select Event</label>
+                                <select id="feedback-event" name="event" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    <!-- Events yahan JS se load honge --></select>
+                            </div>
+                            <div>
+                                <label for="feedback-rating" class="block text-sm font-medium text-gray-700">Rating (1-5)</label>
+                                <select id="feedback-rating" name="rating" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    <option value="5">5 - Excellent</option>
+                                    <option value="4">4 - Good</option>
+                                    <option value="3">3 - Average</option>
+                                    <option value="2">2 - Poor</option>
+                                    <option value="1">1 - Terrible</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="feedback-comment" class="block text-sm font-medium text-gray-700">Comment (Analyzed by AI)</label>
+                                <textarea id="feedback-comment" name="comment" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="e.g., 'The speaker was great, but the food...'"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-6">
+                            <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                                Submit Feedback
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Page 5: NEW - Manage Events (Admin) --><div id="page-manage-events" class="page-content hidden p-8">
+                    <h1 class="text-3xl font-bold text-gray-800">Manage Events</h1>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
+                        <!-- Left: Create Event Form --><div class="lg:col-span-1">
+                            <form id="create-event-form" class="bg-white p-6 rounded-lg shadow-md">
+                                <h2 class="text-2xl font-bold text-gray-800 mb-4">Create New Event</h2>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label for="event-title" class="block text-sm font-medium text-gray-700">Event Title</label>
+                                        <input type="text" id="event-title" required class="mt-1 block w-full rounded-md" placeholder="e.g., 'AI in Future' Seminar">
+                                    </div>
+                                    <div>
+                                        <label for="event-description" class="block text-sm font-medium text-gray-700">Description</label>
+                                        <textarea id="event-description" rows="4" class="mt-1 block w-full rounded-md" placeholder="Describe the event..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label for="event-category" class="block text-sm font-medium text-gray-700">Category</label>
+                                        <select id="event-category" required class="mt-1 block w-full rounded-md">
+                                            <option value="Technical">Technical</option>
+                                            <option value="Cultural">Cultural</option>
+                                            <option value="Sports">Sports</option>
+                                            <option value="Workshop">Workshop</option>
+                                            <option value="General">General</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="event-venue-name" class="block text-sm font-medium text-gray-700">Venue Name</label>
+                                        <input type="text" id="event-venue-name" required class="mt-1 block w-full rounded-md" value="GEU Auditorium">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="event-start-time" class="block text-sm font-medium text-gray-700">Start Time</label>
+                                            <input type="datetime-local" id="event-start-time" required class="mt-1 block w-full rounded-md">
+                                        </div>
+                                        <div>
+                                            <label for="event-end-time" class="block text-sm font-medium text-gray-700">End Time</label>
+                                            <input type="datetime-local" id="event-end-time" required class="mt-1 block w-full rounded-md">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-6">
+                                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                                        Create Event
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- Right: List of Events to Delete --><div class="lg:col-span-2">
+                             <h2 class="text-2xl font-bold text-gray-800 mb-4">All Existing Events</h2>
+                             <div id="manage-events-list" class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                                <!-- Admin event list loads here --></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Page 6: Analytics (Admin) --><div id="page-analytics" class="page-content hidden p-8">
+                    <h1 class="text-3xl font-bold text-gray-800">Feedback Analytics (AI)</h1>
+                    <p class="mt-2 text-gray-600">AI-powered sentiment analysis for your event feedback.</p>
+                    
+                    <div class="mt-6">
+                        <label for="analytics-event-select" class="block text-sm font-medium text-gray-700">Select event to analyze:</label>
+                        <select id="analytics-event-select" class="mt-1 block w-full max-w-sm rounded-md border-gray-300 shadow-sm"></select>
+                    </div>
+
+                    <div id="analytics-results" class="mt-8 bg-white p-6 rounded-lg shadow-md hidden">
+                        <h2 id="analytics-event-title" class="text-2xl font-bold text-gray-800"></h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                            <div class="border p-4 rounded-lg">
+                                <h3 class="text-lg font-semibold text-gray-700">Average Rating</h3>
+                                <p id="analytics-avg-rating" class="text-5xl font-bold text-indigo-600 mt-2">0.0 / 5</p>
+                                <p id="analytics-total-feedback" class="text-sm text-gray-500 mt-1">based on 0 reviews</p>
+                            </div>
+                            <div class="border p-4 rounded-lg">
+                                <h3 class="text-lg font-semibold text-gray-700">AI Sentiment Analysis</h3>
+                                <div class="mt-4 space-y-2">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-green-600">Positive</span>
+                                        <div class="w-3/4 bg-gray-200 rounded-full h-2.5">
+                                            <div id="sentiment-bar-positive" class="bg-green-500 h-2.5 rounded-full" style="width: 0%"></div>
+                                        </div>
+                                        <span id="sentiment-perc-positive" class="text-sm font-medium">0%</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-500">Neutral</span>
+                                        <div class="w-3/4 bg-gray-200 rounded-full h-2.5">
+                                            <div id="sentiment-bar-neutral" class="bg-gray-400 h-2.5 rounded-full" style="width: 0%"></div>
+                                        </div>
+                                        <span id="sentiment-perc-neutral" class="text-sm font-medium">0%</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-red-600">Negative</span>
+                                        <div class="w-3/4 bg-gray-200 rounded-full h-2.5">
+                                            <div id="sentiment-bar-negative" class="bg-red-500 h-2.5 rounded-full" style="width: 0%"></div>
+                                        </div>
+                                        <span id="sentiment-perc-negative" class="text-sm font-medium">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page 7: NEW - Profile Page (All Users) --><div id="page-profile" class="page-content hidden p-8">
+                    <h1 class="text-3xl font-bold text-gray-800">My Profile</h1>
+                    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Profile Details --><div class="md:col-span-1 bg-white p-6 rounded-lg shadow-md">
+                            <img id="profile-avatar" src="https://placehold.co/100x100/60a5fa/ffffff?text=U" alt="Avatar" class="rounded-full mx-auto">
+                            <h2 id="profile-name" class="text-center text-2xl font-bold mt-4"></h2>
+                            <p id="profile-email" class="text-center text-gray-600 mt-1"></p>
+                            <p id="profile-role" class="text-center text-indigo-600 font-semibold mt-1 capitalize"></p>
+                        </div>
+                        <!-- Profile Analytics --><div class="md:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-2xl font-bold text-gray-800">My Statistics</h2>
+                            <div id="profile-stats-container" class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <!-- Stats load here --></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== JAVASCRIPT ===== --><script>
+        // --- State Management ---
+        let currentUser = null;
+        let token = null;
+        const API_URL = ''; // Relative path
+        let allEventsCache = []; 
+
+        // --- DOM Selectors ---
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const mainContent = document.getElementById('main-content');
+        
+        // --- Helper: Custom Alert ---
+        function showAlert(message, type = 'success') {
+            const alertBox = document.getElementById('custom-alert-box');
+            const alertMessage = document.getElementById('custom-alert-message');
+            alertMessage.textContent = message;
+            
+            alertBox.className = "fixed top-5 right-5 z-[100] p-4 rounded-lg shadow-xl text-white"; // Reset
+            if (type === 'success') alertBox.classList.add('bg-green-500');
+            else if (type === 'error') alertBox.classList.add('bg-red-500');
+            else alertBox.classList.add('bg-blue-500');
+
+            alertBox.classList.remove('hidden');
+            setTimeout(() => alertBox.classList.add('hidden'), 3000);
+        }
+        
+        // --- Helper: API Fetch ---
+        async function apiFetch(endpoint, options = {}) {
+            const headers = { 'Content-Type': 'application/json', ...options.headers };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            const response = await fetch(API_URL + endpoint, { ...options, headers });
+            
+            if (response.status === 401) {
+                handleLogout();
+                showAlert('Session expired. Please login again.', 'error');
+                throw new Error('Unauthorized');
+            }
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                showAlert(data.message || 'An error occurred', 'error');
+                throw new Error(data.message || 'API Error');
+            }
+            
+            return data;
+        }
+
+        // --- 1. Authentication ---
+        
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                const data = await apiFetch('/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
+                });
+                
+                token = data.token;
+                currentUser = data.user;
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                
+                showApp();
+                showAlert('Login successful!', 'success');
+            } catch (error) {
+                console.error('Login failed:', error);
+            }
+        });
+        
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            
+            try {
+                // Role is no longer sent from frontend
+                const data = await apiFetch('/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, email, password })
+                });
+                
+                showAlert('Registration successful! Please login.', 'success');
+                showLogin(); 
+            } catch (error) {
+                console.error('Registration failed:', error);
+            }
+        });
+        
+        function handleLogout() {
+            token = null;
+            currentUser = null;
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            showAuth();
+        }
+        
+        function checkAuthOnLoad() {
+            token = localStorage.getItem('token');
+            const userString = localStorage.getItem('user');
+            
+            if (token && userString) {
+                currentUser = JSON.parse(userString);
+                showApp();
+            } else {
+                showAuth();
+            }
+        }
+
+        function showApp() {
+            authContainer.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+            
+            // UPDATED: Sidebar starts collapsed
+            document.body.classList.add('sidebar-collapsed');
+
+            // Setup sidebar user info
+            document.getElementById('user-name-sidebar').textContent = currentUser.name;
+            document.getElementById('user-role-sidebar').textContent = currentUser.role;
+            document.getElementById('user-avatar').src = `https::/placehold.co/40x40/60a5fa/ffffff?text=${currentUser.name[0].toUpperCase()}`;
+            
+            setupRoles();
+            navigateTo('home'); // Default page
+        }
+        
+        function showAuth() {
+            appContainer.classList.add('hidden');
+            authContainer.classList.remove('hidden');
+            document.body.classList.remove('sidebar-collapsed');
+            showLogin(); 
+        }
+
+        function showLogin() {
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+        }
+
+        function showRegister() {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+        }
+        
+        // --- 2. UI Setup & Navigation ---
+        
+        function setupRoles() {
+            // UPDATED: Role-based UI
+            const adminLinks = document.querySelectorAll('.admin-only-link');
+            const studentLinks = document.querySelectorAll('.student-only-link');
+            
+            if (currentUser && currentUser.role === 'admin') {
+                adminLinks.forEach(link => link.style.display = 'block');
+                studentLinks.forEach(link => link.style.display = 'none');
+            } else {
+                adminLinks.forEach(link => link.style.display = 'none');
+                studentLinks.forEach(link => link.style.display = 'block');
+            }
+        }
+
+        document.getElementById('sidebar-toggle-button').addEventListener('click', () => {
+            document.body.classList.toggle('sidebar-collapsed');
+        });
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageName = link.dataset.page;
+                
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                navigateTo(pageName);
+            });
+        });
+        
+        function navigateTo(pageName) {
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            const targetPage = document.getElementById(`page-${pageName}`);
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+            } else {
+                console.error(`Page not found: ${pageName}`);
+                document.getElementById('page-home').classList.remove('hidden');
+                return;
+            }
+            
+            // Page-specific data load
+            if (pageName === 'home') loadHomePage();
+            if (pageName === 'events') loadEventsPage();
+            if (pageName === 'registrations') loadRegistrationsPage();
+            if (pageName === 'feedback') loadFeedbackForm();
+            if (pageName === 'analytics') loadAnalyticsPage();
+            if (pageName === 'manage-events') loadManageEventsPage();
+            if (pageName === 'profile') loadProfilePage();
+        }
+
+        // --- 3. Page Loading Logic ---
+        
+        async function loadHomePage() {
+            document.getElementById('welcome-message').textContent = `Welcome, ${currentUser.name}!`;
+            
+            // Load AI Recommendations
+            const container = document.getElementById('ai-recommendations-container');
+            container.innerHTML = '<p>Loading recommendations...</p>';
+            try {
+                const data = await apiFetch('/api/ai-recommendations');
+                if (data.recommendations.length === 0) {
+                    container.innerHTML = '<p class="text-gray-600">No new recommendations right now. Register for more events to get suggestions!</p>';
+                    return;
+                }
+                
+                container.innerHTML = ''; // Clear loading
+                data.recommendations.forEach(event => {
+                    container.innerHTML += `
+                        <div class="bg-white p-4 rounded-lg shadow-md">
+                            <div class="font-semibold text-indigo-600">${event.category}</div>
+                            <h3 class="text-xl font-bold mt-1">${event.title}</h3>
+                            <p class="text-sm text-gray-500 mt-2">${new Date(event.start_time).toLocaleString()}</p>
+                            <p class="text-gray-700 mt-2 text-sm">${event.description.substring(0, 100)}...</p>
+                        </div>`;
+                });
+            } catch (error) {
+                console.error('Failed to load recommendations:', error);
+                container.innerHTML = '<p class="text-red-500">Could not load recommendations.</p>';
+            }
+        }
+        
+        async function loadEventsPage() {
+            try {
+                const data = await apiFetch('/api/events');
+                allEventsCache = data.events; 
+                renderEvents(allEventsCache);
+            } catch (error) {
+                console.error('Failed to load events:', error);
+            }
+        }
+        
+        function renderEvents(events) {
+            const container = document.getElementById('events-list-container');
+            container.innerHTML = '';
+            if (events.length === 0) {
+                container.innerHTML = '<p class="text-gray-600">No events found.</p>';
+                return;
+            }
+            
+            events.forEach(event => {
+                const eventCard = `
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden flex">
+                        <div class="p-6 flex-1">
+                            <span class="text-sm font-semibold text-indigo-600">${event.category}</span>
+                            <h2 class="text-2xl font-bold text-gray-800">${event.title}</h2>
+                            <p class="text-sm text-gray-500 mt-1">Organized by: ${event.organizer}</p>
+                            <p class="text-gray-700 mt-3">${event.description}</p>
+                            <div class="mt-4 text-sm text-gray-600 space-y-1">
+                                <p><strong>Starts:</strong> ${new Date(event.start_time).toLocaleString()}</p>
+                                <p><strong>Venue:</strong> ${event.venue}</p>
+                            </div>
+                            <div class="mt-6">
+                                <button class="register-btn bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg" data-event-id="${event.id}">
+                                    Register Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+                container.innerHTML += eventCard;
+            });
+            
+            document.querySelectorAll('.register-btn').forEach(btn => {
+                btn.addEventListener('click', handleEventRegistration);
+            });
+        }
+        
+        async function handleEventRegistration(e) {
+            const eventId = e.target.dataset.eventId;
+            try {
+                const data = await apiFetch('/api/register-event', {
+                    method: 'POST',
+                    body: JSON.stringify({ event_id: parseInt(eventId) })
+                });
+                showAlert('Registered for event!', 'success');
+                e.target.textContent = 'Registered';
+                e.target.disabled = true;
+                e.target.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                e.target.classList.add('bg-green-500', 'cursor-not-allowed');
+            } catch (error) {
+                console.error('Registration failed:', error);
+                if (error.message.includes('already registered')) {
+                    e.target.textContent = 'Already Registered';
+                    e.target.disabled = true;
+                    e.target.classList.add('bg-gray-400', 'cursor-not-allowed');
+                }
+            }
+        }
+        
+        async function loadRegistrationsPage() {
+            const container = document.getElementById('my-registrations-container');
+            container.innerHTML = '<p>Loading your registrations...</p>';
+            try {
+                const data = await apiFetch('/api/registrations');
+                container.innerHTML = '';
+                if (data.registrations.length === 0) {
+                    container.innerHTML = '<p class="text-gray-600">You have not registered for any events yet.</p>';
+                    return;
+                }
+                data.registrations.forEach(event => {
+                    container.innerHTML += `
+                        <div class="bg-white rounded-lg shadow-md p-6">
+                            <span class="text-sm font-semibold text-indigo-600">${event.category}</span>
+                            <h2 class="text-2xl font-bold text-gray-800">${event.title}</h2>
+                            <p class="text-sm text-gray-600 mt-2"><strong>Starts:</strong> ${new Date(event.start_time).toLocaleString()}</p>
+                            <p class="text-sm text-gray-600"><strong>Venue:</strong> ${event.venue}</p>
+                        </div>`;
+                });
+            } catch (error) {
+                console.error('Failed to load registrations:', error);
+                container.innerHTML = '<p class="text-red-500">Could not load registrations.</p>';
+            }
+        }
+        
+        async function loadFeedbackForm() {
+            const select = document.getElementById('feedback-event');
+            select.innerHTML = '<option value="">-- Select an event --</option>';
+            
+            // We need to get *registered* events, not all events
+            try {
+                const data = await apiFetch('/api/registrations');
+                if (data.registrations.length === 0) {
+                     select.innerHTML = '<option value="">Register for events to submit feedback</option>';
+                     return;
+                }
+                data.registrations.forEach(event => {
+                    select.innerHTML += `<option value="${event.id}">${event.title}</option>`;
+                });
+            } catch (error) {
+                 console.error('Failed to load registered events for feedback:', error);
+            }
+        }
+        
+        async function loadAnalyticsPage() {
+            const select = document.getElementById('analytics-event-select');
+            select.innerHTML = '<option value="">-- Select event to analyze --</option>';
+            
+            if (allEventsCache.length === 0) {
+                try {
+                    const data = await apiFetch('/api/events');
+                    allEventsCache = data.events;
+                } catch (error) {
+                    console.error('Failed to load events for analytics:', error);
+                    return;
+                }
+            }
+            
+            allEventsCache.forEach(event => {
+                select.innerHTML += `<option value="${event.id}">${event.title}</option>`;
+            });
+            
+            document.getElementById('analytics-results').classList.add('hidden');
+        }
+
+        // NEW: Load Manage Events Page (Admin)
+        async function loadManageEventsPage() {
+            const container = document.getElementById('manage-events-list');
+            container.innerHTML = '<p>Loading events...</p>';
+            try {
+                const data = await apiFetch('/api/events');
+                allEventsCache = data.events;
+                container.innerHTML = '';
+                if (allEventsCache.length === 0) {
+                    container.innerHTML = '<p>No events found. Create one!</p>';
+                    return;
+                }
+                allEventsCache.forEach(event => {
+                    container.innerHTML += `
+                        <div class="bg-white p-4 rounded-lg shadow-sm flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-semibold">${event.title}</h3>
+                                <p class="text-sm text-gray-500">${event.category} | ${new Date(event.start_time).toLocaleDateString()}</p>
+                            </div>
+                            <button class="delete-event-btn text-red-500 hover:text-red-700" data-event-id="${event.id}">
+                                <i class="ph ph-trash text-2xl"></i>
+                            </button>
+                        </div>`;
+                });
+
+                // Add listeners to new delete buttons
+                document.querySelectorAll('.delete-event-btn').forEach(btn => {
+                    btn.addEventListener('click', handleDeleteEvent);
+                });
+
+            } catch (error) {
+                console.error('Failed to load events for management:', error);
+                container.innerHTML = '<p class="text-red-500">Could not load events.</p>';
+            }
+        }
+
+        // NEW: Load Profile Page
+        async function loadProfilePage() {
+            document.getElementById('profile-name').textContent = currentUser.name;
+            document.getElementById('profile-email').textContent = currentUser.email;
+            document.getElementById('profile-role').textContent = currentUser.role;
+            document.getElementById('profile-avatar').src = `https::/placehold.co/100x100/60a5fa/ffffff?text=${currentUser.name[0].toUpperCase()}`;
+            
+            const statsContainer = document.getElementById('profile-stats-container');
+            statsContainer.innerHTML = '<p>Loading statistics...</p>';
+            
+            try {
+                const data = await apiFetch('/api/profile-analytics');
+                statsContainer.innerHTML = `
+                    <div class="text-center p-4 bg-gray-100 rounded-lg">
+                        <p class="text-4xl font-bold text-indigo-600">${data.total_registrations}</p>
+                        <p class="text-sm text-gray-600">Events Registered</p>
+                    </div>
+                    <div class="text-center p-4 bg-gray-100 rounded-lg">
+                        <p class="text-4xl font-bold text-indigo-600">${data.total_feedback_submitted}</p>
+                        <p class="text-sm text-gray-600">Feedbacks Submitted</p>
+                    </div>
+                    <div class="text-center p-4 bg-gray-100 rounded-lg">
+                        <p class="text-2xl font-bold text-indigo-600">${data.favorite_category}</p>
+                        <p class="text-sm text-gray-600">Favorite Category</p>
+                    </div>`;
+            } catch (error) {
+                console.error('Failed to load profile stats:', error);
+                statsContainer.innerHTML = '<p class="text-red-500">Could not load stats.</p>';
+            }
+        }
+
+        // --- 4. Form Submissions & Actions ---
+        
+        document.getElementById('feedback-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const event_id = parseInt(form.elements['feedback-event'].value);
+            const rating = parseInt(form.elements['feedback-rating'].value);
+            const comment = form.elements['feedback-comment'].value;
+            
+            if (!event_id) {
+                showAlert('Please select an event.', 'error'); return;
+            }
+            
+            try {
+                await apiFetch('/api/feedback', {
+                    method: 'POST',
+                    body: JSON.stringify({ event_id, rating, comment })
+                });
+                showAlert('Feedback submitted successfully!', 'success');
+                form.reset();
+                navigateTo('home');
+            } catch (error) {
+                console.error('Feedback submission failed:', error);
+            }
+        });
+        
+        document.getElementById('create-event-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const eventData = {
+                title: form.elements['event-title'].value,
+                description: form.elements['event-description'].value,
+                category: form.elements['event-category'].value, // Added
+                venue_name: form.elements['event-venue-name'].value,
+                start_time: form.elements['event-start-time'].value,
+                end_time: form.elements['event-end-time'].value
+            };
+
+            try {
+                await apiFetch('/api/events', {
+                    method: 'POST',
+                    body: JSON.stringify(eventData)
+                });
+                showAlert('Event created successfully!', 'success');
+                form.reset();
+                loadManageEventsPage(); // Refresh the list
+            } catch (error) {
+                console.error('Event creation failed:', error);
+            }
+        });
+        
+        // NEW: Delete Event Handler
+        async function handleDeleteEvent(e) {
+            const eventId = e.currentTarget.dataset.eventId;
+            // Use custom confirm, not window.confirm()
+            if (!confirm(`Are you sure you want to delete this event? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                await apiFetch(`/api/events/${eventId}`, {
+                    method: 'DELETE'
+                });
+                showAlert('Event deleted successfully!', 'success');
+                loadManageEventsPage(); // Refresh the list
+            } catch (error) {
+                console.error('Failed to delete event:', error);
+            }
+        }
+
+        // --- 5. Advanced Features (Blur on Scroll, Analytics) ---
+        
+        mainContent.addEventListener('scroll', () => {
+            const heroImage = document.getElementById('home-hero-bg-image'); // Changed ID
+            if (!heroImage) return; 
+            
+            const scrollTop = mainContent.scrollTop;
+            const blurValue = Math.min(10, scrollTop / 10);
+            const scaleValue = 1 + (scrollTop / 1000);
+            
+            heroImage.style.filter = `blur(${blurValue}px) brightness(0.7)`; // Keep original brightness
+            heroImage.style.transform = `scale(${scaleValue})`;
+        });
+        
+        document.getElementById('analytics-event-select').addEventListener('change', async (e) => {
+            const eventId = e.target.value;
+            const resultsContainer = document.getElementById('analytics-results');
+            
+            if (!eventId) {
+                resultsContainer.classList.add('hidden');
+                return;
+            }
+            
+            try {
+                const data = await apiFetch(`/api/feedback-analytics/${eventId}`);
+                
+                document.getElementById('analytics-event-title').textContent = `Results for: ${allEventsCache.find(ev => ev.id == eventId).title}`;
+                document.getElementById('analytics-avg-rating').textContent = `${data.average_rating} / 5`;
+                document.getElementById('analytics-total-feedback').textContent = `based on ${data.total_feedback} reviews`;
+                
+                document.getElementById('sentiment-bar-positive').style.width = `${data.sentiment_analysis.positive.toFixed(0)}%`;
+                document.getElementById('sentiment-perc-positive').textContent = `${data.sentiment_analysis.positive.toFixed(0)}%`;
+                
+                document.getElementById('sentiment-bar-neutral').style.width = `${data.sentiment_analysis.neutral.toFixed(0)}%`;
+                document.getElementById('sentiment-perc-neutral').textContent = `${data.sentiment_analysis.neutral.toFixed(0)}%`;
+                
+                document.getElementById('sentiment-bar-negative').style.width = `${data.sentiment_analysis.negative.toFixed(0)}%`;
+                document.getElementById('sentiment-perc-negative').textContent = `${data.sentiment_analysis.negative.toFixed(0)}%`;
+
+                resultsContainer.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Failed to load analytics:', error);
+                resultsContainer.classList.add('hidden');
+            }
+        });
+        
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthOnLoad();
+            document.getElementById('show-register-form').addEventListener('click', (e) => { e.preventDefault(); showRegister(); });
+            document.getElementById('show-login-form').addEventListener('click', (e) => { e.preventDefault(); showLogin(); });
+            document.getElementById('logout-button').addEventListener('click', handleLogout);
+        });
+    </script>
+</body>
+</html>

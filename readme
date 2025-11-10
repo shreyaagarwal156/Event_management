@@ -1,0 +1,61 @@
+GEU Events - MySQL Project Setup
+
+Yeh instructions app.py ko aapke local MySQL server ke saath chalaane ke liye hain.
+
+Step 1: MySQL Workbench Mein Database Banayein
+
+Apna MySQL Workbench kholein aur local connection se login karein.
+
+Ek naya query tab kholein aur sirf yeh ek command chalayein:
+
+CREATE DATABASE event_system;
+
+
+IMPORTANT: Aapko database.sql file (jisme CREATE TABLE likha hai) run karne ki zaroorat nahi hai. app.py yeh kaam khud karega.
+
+Step 2: Terminal Mein Project Setup Karein
+
+Apna Windows Terminal kholein aur project folder mein jaayein:
+
+cd Desktop\Event_Management
+
+
+Virtual environment banayein (agar nahi bana hai):
+
+python -m venv venv
+
+
+Environment ko activate karein:
+
+.\venv\Scripts\activate
+
+
+(Aapke prompt ke shuru mein (venv) dikhna chahiye.)
+
+Step 3: Saari Libraries Install Karein
+
+Jab (venv) active ho, yeh command chalayein:
+
+pip install Flask Flask-SQLAlchemy Flask-Cors Flask-Bcrypt PyJWT PyMySQL
+
+
+(PyMySQL driver hai jo Python ko MySQL se baat karne deta hai.)
+
+Step 4: Server Run Karein
+
+Libraries install hone ke baad, server run karein:
+
+python app.py
+
+
+Aapko terminal mein yeh dikhna chahiye (bina kisi red error ke):
+
+Default admin user (admin@geu.ac.in / admin123) created.
+Default 'GEU Auditorium' venue created.
+Database tables checked and initial data added.
+ * Running on [http://127.0.0.1:5000/](http://127.0.0.1:5000/)
+
+
+Apna browser kholein aur http://127.0.0.1:5000/ par jaayein.
+
+Aapka poora advanced application taiyaar hai!
