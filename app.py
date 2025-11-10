@@ -5,37 +5,32 @@ from flask_bcrypt import Bcrypt
 import jwt
 import datetime
 from functools import wraps
-import re # AI/ML Sentiment (Mock)
-import pymysql # MySQL se connect karne ke liye
-from sqlalchemy import func # Statistics ke liye
+import re
+import pymysql
+from sqlalchemy import func
 
-# --- Configuration ---
 app = Flask(__name__)
 
-# --- MySQL Connection ---
 USER = 'root'
-PASSWORD = 'Root%40123'      # @ ko %40 se badal diya
-HOSTNAME = '127.0.0.1'     
-PORT = '3306'              
-DATABASE = 'event_system'  
+PASSWORD = 'Root%40123'
+HOSTNAME = '127.0.0.1'
+PORT = '3306'
+DATABASE = 'event_system'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{USER}:{PASSWORD}@{HOSTNAME}:{PORT}/{DATABASE}"
 app.config['SECRET_KEY'] = 'a-very-secret-key-that-is-long-and-random'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- Initialize Extensions ---
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
-CORS(app) 
-
-# --- Database Models (Tables) ---
+CORS(app)
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False) 
-    role = db.Column(db.String(20), nullable=False, default='student') # 'student' or 'admin'
+    password = db.Column(db.String(100), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='student')
 
 class Venue(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -48,12 +43,9 @@ class Event(db.Model):
     description = db.Column(db.Text, nullable=True)
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
-    # NEW: Category for AI
-    category = db.Column(db.String(50), nullable=False, default='General') 
-    
+    category = db.Column(db.String(50), nullable=False, default='General')
     venue_id = db.Column(db.Integer, db.ForeignKey('venue.id'), nullable=False)
     organizer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
     venue = db.relationship('Venue')
     organizer = db.relationship('User')
 
@@ -61,9 +53,7 @@ class Registration(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
-    # Ensure a user can only register once for an event
     __table_args__ = (db.UniqueConstraint('user_id', 'event_id', name='_user_event_uc'),)
-
 
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -72,7 +62,6 @@ class Feedback(db.Model):
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text, nullable=True)
 
-# --- Authentication Helper (Token) ---
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -92,7 +81,6 @@ def token_required(f):
         return f(current_user, *args, **kwargs)
     return decorated
 
-# --- Admin Role Helper ---
 def admin_required(f):
     @wraps(f)
     def decorated(current_user, *args, **kwargs):
@@ -101,9 +89,6 @@ def admin_required(f):
         return f(current_user, *args, **kwargs)
     return decorated
 
-# --- API Routes ---
-
-# 1. Authentication Routes
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -112,12 +97,11 @@ def register():
         return jsonify({'message': 'Email already registered!'}), 409
 
     hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
-    # UPDATED: Role is now hardcoded to 'student' for all public registrations
     new_user = User(
         name=data['name'], 
         email=data['email'], 
         password=hashed_password, 
-        role='student' # Admin cannot be created from this form
+        role='student'
     )
     db.session.add(new_user)
     db.session.commit()
@@ -146,7 +130,6 @@ def login():
         }
     }), 200
 
-# 2. Event Routes
 @app.route('/api/events', methods=['GET'])
 @token_required
 def get_events(current_user):
@@ -182,7 +165,7 @@ def create_event(current_user):
         description=data['description'],
         start_time=datetime.datetime.fromisoformat(data['start_time']),
         end_time=datetime.datetime.fromisoformat(data['end_time']),
-        category=data['category'], # Added category
+        category=data['category'],
         venue_id=venue.id,
         organizer_id=current_user.id
     )
@@ -190,7 +173,6 @@ def create_event(current_user):
     db.session.commit()
     return jsonify({'message': 'Event created successfully!'}), 201
 
-# NEW: Delete event endpoint
 @app.route('/api/events/<int:event_id>', methods=['DELETE'])
 @token_required
 @admin_required
@@ -199,7 +181,6 @@ def delete_event(current_user, event_id):
     if not event:
         return jsonify({'message': 'Event not found!'}), 404
     
-    # Before deleting event, delete related registrations and feedback
     Registration.query.filter_by(event_id=event_id).delete()
     Feedback.query.filter_by(event_id=event_id).delete()
     
@@ -207,7 +188,6 @@ def delete_event(current_user, event_id):
     db.session.commit()
     return jsonify({'message': 'Event deleted successfully!'}), 200
 
-# 3. Registration Routes
 @app.route('/api/registrations', methods=['GET'])
 @token_required
 def get_my_registrations(current_user):
@@ -243,7 +223,6 @@ def register_for_event(current_user):
     db.session.commit()
     return jsonify({'message': 'Registered successfully!'}), 201
 
-# 4. Feedback Routes
 @app.route('/api/feedback', methods=['POST'])
 @token_required
 def submit_feedback(current_user):
@@ -261,8 +240,6 @@ def submit_feedback(current_user):
     db.session.add(new_feedback)
     db.session.commit()
     return jsonify({'message': 'Feedback submitted successfully!'}), 201
-
-# --- 5. NEW: Analytics & AI Routes ---
 
 @app.route('/api/feedback-analytics/<int:event_id>', methods=['GET'])
 @token_required
@@ -295,14 +272,12 @@ def get_feedback_analytics(current_user, event_id):
         'sentiment_analysis': sentiments_percent
     }), 200
 
-# NEW: Profile Page Analytics
 @app.route('/api/profile-analytics', methods=['GET'])
 @token_required
 def get_profile_analytics(current_user):
     total_registrations = Registration.query.filter_by(user_id=current_user.id).count()
     total_feedback = Feedback.query.filter_by(user_id=current_user.id).count()
     
-    # Find user's most attended category
     favorite_category = db.session.query(
         Event.category, func.count(Event.category).label('category_count')
     ).join(
@@ -321,11 +296,9 @@ def get_profile_analytics(current_user):
         'favorite_category': favorite_category[0] if favorite_category else 'None'
     })
 
-# NEW: AI Recommendations
 @app.route('/api/ai-recommendations', methods=['GET'])
 @token_required
 def get_ai_recommendations(current_user):
-    # 1. Find user's favorite category
     favorite_category_query = db.session.query(
         Event.category
     ).join(
@@ -339,20 +312,18 @@ def get_ai_recommendations(current_user):
     ).first()
     
     if not favorite_category_query:
-        return jsonify({'recommendations': []}) # No recommendations if user has no history
+        return jsonify({'recommendations': []})
 
     fav_category = favorite_category_query[0]
 
-    # 2. Find events user has *already* registered for
     registered_event_ids = [
         reg.event_id for reg in Registration.query.filter_by(user_id=current_user.id).all()
     ]
 
-    # 3. Find *upcoming* events in that category
     recommendations = Event.query.filter(
         Event.category == fav_category,
         Event.start_time > datetime.datetime.utcnow(),
-        ~Event.id.in_(registered_event_ids) # ~ means 'NOT IN'
+        ~Event.id.in_(registered_event_ids)
     ).limit(3).all()
 
     output = []
@@ -382,7 +353,6 @@ def simple_sentiment(comment):
     if neg_count > pos_count: return 'negative'
     return 'neutral'
 
-# --- Frontend Serving Route ---
 @app.route('/')
 def home():
     try:
@@ -392,9 +362,7 @@ def home():
     except FileNotFoundError:
         return "Error: index.html not found.", 404
 
-# --- Function to Create Tables and Dummy Data ---
 def setup_database():
-    """Creates tables and a default admin if they don't exist."""
     try:
         db.create_all()
         
@@ -422,7 +390,6 @@ def setup_database():
         print("--- !!! ---")
         db.session.rollback()
 
-# --- Run the App ---
 if __name__ == '__main__':
     with app.app_context():
         setup_database()
